@@ -3,15 +3,18 @@
   const FIELD_ID = 'customfield_14233';
   const sel = document.getElementById('location');
 
-  // ONE API call = options + current value
   AP.request({
     url: `/rest/api/3/issue/${ISSUE_KEY}?fields=${FIELD_ID}`,
     success: r => {
       const field = JSON.parse(r).fields[FIELD_ID];
       field.allowedValues.forEach(o => sel.add(new Option(o.value, o.id)));
-      if (field.value) sel.value = field.id;
+      if (field.value) sel.value = field.value.id;   // ← FIXED
     },
-    error: () => sel.add(new Option('ITSD', 'ITSD'), new Option('IPSD', 'IPSD'))
+    error: () => {
+      // fallback if API fails
+      sel.add(new Option('ITSD', 'ITSD'));
+      sel.add(new Option('IPSD', 'IPSD'));
+    }
   });
 
   document.getElementById('save').onclick = () => {
