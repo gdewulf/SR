@@ -1,15 +1,39 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <link rel="stylesheet" type="text/css" href="https://gdewulf.github.io/SR/style.css">
-  <script src="https://gdewulf.github.io/SR/script.js"></script>
-</head>
-<body>
-  <div id="handover-panel">
-    <h3>Handoff Destination</h3>
-    <select id="location"></select>
-    <button id="save">Save & Trigger</button>
-    <p id="msg"></p>
-  </div>
-</body>
-</html>
+<div id="handover-panel" style="font-family:system-ui;padding:12px;">
+  <h3 style="margin:0 0 8px 0;color:#172b4d;">Handoff Destination</h3>
+  <select id="location" style="width:100%;padding:6px;margin:4px 0;"></select>
+  <button id="save" style="background:#0052cc;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:8px;">Save & Trigger</button>
+  <p id="msg" style="margin-top:8px;font-weight:bold;"></p>
+
+  <script>
+    // 100% self-contained — NO external files
+    const sel = document.getElementById('location');
+    const msg = document.getElementById('msg');
+
+    // Fill dropdown
+    sel.innerHTML = '<option value="ITSD">ITSD</option><option value="IPSD">IPSD</option>';
+
+    // Load current value
+    AP.request({
+      url: '/rest/api/3/issue/' + AP.context.getContext().jira.issue.key + '?fields=customfield_14233',
+      success: r => {
+        const val = JSON.parse(r).fields.customfield_14233?.value?.id;
+        if (val) sel.value = val;
+      }
+    });
+
+    // Save
+    document.getElementById('save').onclick = () => {
+      AP.request({
+        url: '/rest/api/3/issue/' + AP.context.getContext().jira.issue.key,
+        type: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify({ fields: { customfield_14233: { id: sel.value } } }),
+        success: () => {
+          msg.innerHTML = '<span style="color:green;font-size:18px">FIELD UPDATED! Page reloading…</span>';
+          setTimeout(() => location.reload(), 1200);
+        },
+        error: e => msg.innerHTML = '<span style="color:red">ERROR: ' + e.responseText + '</span>'
+      });
+    };
+  </script>
+</div>
