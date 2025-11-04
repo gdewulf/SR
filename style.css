@@ -1,0 +1,4 @@
+#handover-panel select { width:100%; padding:8px; margin:8px 0; box-sizing:border-box; }
+#handover-panel button { background:#0052CC; color:white; border:none; padding:8px 16px; cursor:pointer; border-radius:3px; }
+#handover-panel button:hover { background:#0065FF; }
+#msg { margin-top:8px; font-weight:bold; }
