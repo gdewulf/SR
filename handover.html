@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Handover Panel</title>
+    <script src="https://connect-cdn.atl-paas.net/all.js"></script>
+    <style>
+      #handover-panel { font-family: system-ui; padding: 12px; }
+      #handover-panel h3 { margin: 0 0 8px 0; color: #172b4d; }
+      #handover-panel select { width: 100%; padding: 6px; margin: 4px 0; }
+      #handover-panel button {
+        background: #0052cc; color: white; border: none; padding: 8px 16px;
+        border-radius: 4px; cursor: pointer; margin-top: 8px;
+      }
+      #handover-panel p { margin-top: 8px; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div id="handover-panel">
+      <h3>Handoff Destination</h3>
+      <select id="location"></select>
+      <button id="save">Save & Trigger</button>
+      <p id="msg">Initializing...</p>
+    </div>
+
+    <!-- Load your JS file last -->
+    <script src="https://gdewulf.github.io/SR/handover.js"></script>
+  </body>
+</html>
