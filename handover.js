@@ -2,6 +2,7 @@ let retryCount = 0;
 const maxRetries = 25; // ~5 seconds
 
 function initHandover() {
+  // Wait until Jira injects AP
   if (typeof AP === 'undefined' || !AP.context) {
     retryCount++;
     if (retryCount < maxRetries) {
@@ -21,7 +22,7 @@ function initHandover() {
   const btn = document.getElementById('save');
   msg.innerHTML = 'Loading options...';
 
-  // Get Jira issue context
+  // Get Jira issue key
   AP.context.getContext(context => {
     const issueKey = context?.jira?.issue?.key;
     if (!issueKey) {
@@ -31,7 +32,7 @@ function initHandover() {
     }
     console.log('Issue key:', issueKey);
 
-    // Fetch all fields to find our custom field
+    // Fetch all fields
     AP.request({
       url: '/rest/api/3/field',
       success: r => {
@@ -43,16 +44,16 @@ function initHandover() {
           return;
         }
 
-        // Load options from context 1 (adjust if needed)
+        // Fetch options (context 1)
         AP.request({
           url: `/rest/api/3/field/${targetField.id}/context/1/option`,
           success: res => {
             try {
               const data = JSON.parse(res);
               const options = data.values || [];
-              if (options.length === 0) {
+              if (!options.length) {
                 msg.innerHTML = 'No options found for field.';
-                console.warn('Field has no options in context 1:', data);
+                console.warn('No options in context 1:', data);
                 return;
               }
 
@@ -77,7 +78,7 @@ function initHandover() {
               });
 
             } catch (err) {
-              console.error('Error parsing field options response', err, res);
+              console.error('Error parsing options response', err, res);
               msg.innerHTML = 'Failed to parse field options.';
             }
           },
@@ -88,7 +89,7 @@ function initHandover() {
         });
       },
       error: e => {
-        console.error('Error fetching field metadata', e);
+        console.error('Error fetching fields', e);
         msg.innerHTML = 'Unable to fetch field list.';
       }
     });
@@ -122,5 +123,5 @@ function initHandover() {
   });
 }
 
-// Kick off initialization
+// Start initialization
 initHandover();
