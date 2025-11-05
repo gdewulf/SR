@@ -5,7 +5,7 @@ const msg = document.getElementById('msg');
 // HARD-CODED OPTIONS 
 sel.innerHTML = '<option value="ITSD">ITSD</option><option value="IPSD">IPSD</option>';
 
-msg.innerHTML = 'Ready — pick and Save';
+msg.innerHTML = 'Click ave and Trigger to move this ticket';
 
 // Load current value (optional)
 AP.request({
