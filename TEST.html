@@ -1,0 +1,77 @@
+<div id="handover-panel" style="font-family:system-ui;padding:12px;">
+  <h3 style="margin:0 0 8px 0;color:#172b4d;">Handoff Destination</h3>
+  <select id="location" style="width:100%;padding:6px;margin:4px 0;"></select>
+  <button id="save" style="background:#0052cc;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:8px;">Save & Trigger</button>
+  <p id="msg" style="margin-top:8px;font-weight:bold;">Initializing...</p>
+</div>
+
+<script src="https://connect-cdn.atl-paas.net/all.js"></script>
+<script>
+  let retryCount = 0;
+  const maxRetries = 25;
+
+  function initHandover() {
+    if (typeof AP === 'undefined' || !AP.context) {
+      retryCount++;
+      if (retryCount < maxRetries) {
+        console.warn('AP not ready yet, retrying...');
+        setTimeout(initHandover, 200);
+      } else {
+        document.getElementById('msg').innerHTML = 'Error: AP not available.';
+        console.error('AP never loaded. Are you running this inside Jira?');
+      }
+      return;
+    }
+
+    const sel = document.getElementById('location');
+    const msg = document.getElementById('msg');
+    const btn = document.getElementById('save');
+    msg.innerHTML = 'Loading options...';
+
+    AP.context.getContext(context => {
+      const issueKey = context?.jira?.issue?.key;
+      if (!issueKey) {
+        msg.innerHTML = 'Unable to determine issue key.';
+        return;
+      }
+
+      // Hard-coded options (adjust if needed)
+      const options = ['ITSD','IPSD'];
+      sel.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join('');
+      msg.innerHTML = 'Click Save & Trigger to move this ticket';
+
+      // Load current value
+      AP.request({
+        url: `/rest/api/3/issue/${issueKey}?fields=customfield_14233`,
+        success: r => {
+          const val = JSON.parse(r).fields.customfield_14233?.value;
+          if (val) sel.value = val;
+        }
+      });
+
+      // Save button
+      btn.onclick = () => {
+        if (!sel.value) {
+          msg.innerHTML = 'Please select a destination first.';
+          return;
+        }
+        msg.innerHTML = 'Saving...';
+        AP.request({
+          url: `/rest/api/3/issue/${issueKey}`,
+          type: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({ fields: { customfield_14233: { value: sel.value } } }),
+          success: () => {
+            msg.innerHTML = '<span style="color:green;">Field updated! Reloading…</span>';
+            setTimeout(() => AP.navigator.reload(), 1200);
+          },
+          error: () => {
+            msg.innerHTML = '<span style="color:red;">Error saving field</span>';
+          }
+        });
+      };
+    });
+  }
+
+  initHandover();
+</script>
