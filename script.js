@@ -1,8 +1,8 @@
-// THIS IS THE EXACT CODE THAT MADE YOU SAY "OK its working"
+
 const sel = document.getElementById('location');
 const msg = document.getElementById('msg');
 
-// HARD-CODED OPTIONS — 100% guaranteed to appear
+// HARD-CODED OPTIONS 
 sel.innerHTML = '<option value="ITSD">ITSD</option><option value="IPSD">IPSD</option>';
 
 msg.innerHTML = 'Ready — pick and Save';
