@@ -1,8 +1,17 @@
+let retryCount = 0;
+const maxRetries = 25; // ~5 seconds
+
 function initHandover() {
-  // Wait until the Atlassian API is available
   if (typeof AP === 'undefined' || !AP.context) {
-    console.warn('AP not ready yet, retrying...');
-    return setTimeout(initHandover, 200);
+    retryCount++;
+    if (retryCount < maxRetries) {
+      console.warn('AP not ready yet, retrying...');
+      return setTimeout(initHandover, 200);
+    } else {
+      console.error('AP never loaded. Are you running this inside Jira?');
+      document.getElementById('msg').innerHTML = 'Error: AP not available.';
+      return;
+    }
   }
 
   console.log('AP ready — initializing handover panel');
@@ -10,57 +19,49 @@ function initHandover() {
   const sel = document.getElementById('location');
   const msg = document.getElementById('msg');
   const btn = document.getElementById('save');
-
   msg.innerHTML = 'Loading options...';
 
-  // Get Jira issue context (async)
+  // Get Jira issue context
   AP.context.getContext(context => {
     const issueKey = context?.jira?.issue?.key;
-
     if (!issueKey) {
-      msg.innerHTML = '<span style="color:red;">Unable to determine issue key.</span>';
+      msg.innerHTML = 'Unable to determine issue key.';
       console.error('Context missing issue key:', context);
       return;
     }
-
     console.log('Issue key:', issueKey);
 
-    // STEP 1: Fetch all fields to find your custom field
+    // Fetch all fields to find our custom field
     AP.request({
       url: '/rest/api/3/field',
       success: r => {
         const fields = JSON.parse(r);
         const targetField = fields.find(f => f.id === 'customfield_14233');
         if (!targetField) {
-          msg.innerHTML = '<span style="color:red;">Custom field not found!</span>';
-          console.error('customfield_14233 not found among fields:', fields);
+          msg.innerHTML = 'Custom field not found!';
+          console.error('customfield_14233 not found:', fields);
           return;
         }
 
-        console.log('Found field:', targetField.name, targetField.id);
-
-        // STEP 2: Try to get its options from context 1
+        // Load options from context 1 (adjust if needed)
         AP.request({
           url: `/rest/api/3/field/${targetField.id}/context/1/option`,
           success: res => {
             try {
               const data = JSON.parse(res);
               const options = data.values || [];
-
               if (options.length === 0) {
-                msg.innerHTML = '<span style="color:red;">No options found for field context.</span>';
+                msg.innerHTML = 'No options found for field.';
                 console.warn('Field has no options in context 1:', data);
                 return;
               }
 
               // Populate dropdown
-              sel.innerHTML = options
-                .map(o => `<option value="${o.value}">${o.value}</option>`)
-                .join('');
-
+              sel.innerHTML = options.map(o =>
+                `<option value="${o.value}">${o.value}</option>`).join('');
               msg.innerHTML = 'Click Save & Trigger to move this ticket';
 
-              // STEP 3: Load current field value
+              // Load current value
               AP.request({
                 url: `/rest/api/3/issue/${issueKey}?fields=customfield_14233`,
                 success: r => {
@@ -74,27 +75,28 @@ function initHandover() {
                 },
                 error: e => console.error('Error loading current field value', e)
               });
+
             } catch (err) {
               console.error('Error parsing field options response', err, res);
-              msg.innerHTML = '<span style="color:red;">Failed to parse field options.</span>';
+              msg.innerHTML = 'Failed to parse field options.';
             }
           },
           error: e => {
             console.error('Error fetching field options', e);
-            msg.innerHTML = '<span style="color:red;">Error loading options. Check console.</span>';
+            msg.innerHTML = 'Error loading options. Check console.';
           }
         });
       },
       error: e => {
         console.error('Error fetching field metadata', e);
-        msg.innerHTML = '<span style="color:red;">Unable to fetch field list.</span>';
+        msg.innerHTML = 'Unable to fetch field list.';
       }
     });
 
-    // STEP 4: Save button handler
+    // Save button
     btn.onclick = () => {
       if (!sel.value) {
-        msg.innerHTML = '<span style="color:red;">Please select a destination first.</span>';
+        msg.innerHTML = 'Please select a destination first.';
         return;
       }
 
@@ -105,17 +107,15 @@ function initHandover() {
         type: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify({
-          fields: {
-            customfield_14233: { value: sel.value }
-          }
+          fields: { customfield_14233: { value: sel.value } }
         }),
         success: () => {
-          msg.innerHTML = '<span style="color:green;font-size:16px;">Field updated! Reloading…</span>';
+          msg.innerHTML = '<span style="color:green;">Field updated! Reloading…</span>';
           setTimeout(() => AP.navigator.reload(), 1200);
         },
         error: e => {
           console.error('Error updating field', e);
-          msg.innerHTML = '<span style="color:red;">Error saving field. Check console.</span>';
+          msg.innerHTML = 'Error saving field. Check console.';
         }
       });
     };
